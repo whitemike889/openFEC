@@ -1,20 +1,37 @@
----
 applications:
-  - name: api
-    instances: 1
-    memory: 1.5G
-    disk_quota: 1G
-    stack: cflinuxfs3
-    buildpacks:
-      - python_buildpack
-    path: ../
-    routes:
+  - buildpacks:
+    - python_buildpack
+  - env:
+      APP_NAME: fec | api | dev
+  - routes:
       - route: fec-dev-api.app.cloud.gov
-    services:
+  - services:
       - fec-api-elasticsearch
       - fec-elasticache-redis
       - fec-creds-dev
       - fec-s3-api
       - fec-s3-snapshot
-    env:
-      APP_NAME: fec | api | dev
+  - name: api
+  - stack: cflinuxfs3
+  -  path: ../
+    instances: 1
+    memory: 1.5G
+    disk_quota: 1G
+processes:
+  - type: celery-beat
+    command: celery beat --app webservices.tasks --loglevel INFO
+    health-check-type: process
+    instances: 1
+    memory: 256M
+    disk_quota: 1G
+    no-route: true
+    path: ../
+  - type: celery-worker
+    command: celery worker --app webservices.tasks --loglevel ${LOGLEVEL:=INFO} --concurrency 2
+    health-check-type: process
+    timeout: 15 
+    instances: 1
+    memory: 1G
+    disk_quota: 1G
+    no-route: true
+    path: ../
