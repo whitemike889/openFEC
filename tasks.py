@@ -215,8 +215,9 @@ def deploy(ctx, space=None, branch=None, login=None, yes=False, migrate_database
     with open('.cfmeta', 'w') as fp:
         json.dump({'user': os.getenv('USER'), 'branch': branch}, fp)
 
-    # Deploy API and worker applications
-    for app in ('api'):
+    # Deploy API app
+    app = 'api'
+    if app == 'api':
         existing_deploy = ctx.run('cf app {0}'.format(app), echo=True, warn=True)
         print("\n")
         cmd = 'push --strategy rolling' if existing_deploy.ok else 'push'
