@@ -93,6 +93,19 @@ app.config['SQLALCHEMY_ROUTE_SCHEDULE_A'] = bool(
 )
 app.config['PROPAGATE_EXCEPTIONS'] = True
 
+# Time in seconds
+EFILING_CACHE = 0
+LEGAL_CACHE = 60 * 5
+CALENDAR_CACHE = 60 * 5
+DEFAULT_CACHE = 60 * 60
+
+# cloud.gov time is in UTC (UTC = ET + 4 or 5 hours, depending on DST)
+PEAK_HOURS_START = time(13)  # 9:00 ET + 4 = 13:00 UTC
+PEAK_HOURS_END = time(23, 30)  # 19:30 ET + 4 = 23:30 UTC
+
+DEFAULT_HEADER_TYPE = 'Cache-Control'
+DEFAULT_HEADER_PREFIX = 'public, max-age='
+
 # app.config['SQLALCHEMY_ECHO'] = True
 
 # Modify app configuration and logging level for production
@@ -181,40 +194,31 @@ def limit_remote_addr():
 
 def get_cache_header(url):
 
-    # Time in seconds
-    EFILING_CACHE = 0
-    LEGAL_CACHE = 60 * 5
-    CALENDAR_CACHE = 60 * 5
-    DEFAULT_CACHE = 60 * 60
-
-    # cloud.gov time is in UTC (UTC = ET + 4 or 5 hours, depending on DST)
-    PEAK_HOURS_START = time(13)  # 9:00 ET + 4 = 13:00 UTC
-    PEAK_HOURS_END = time(23, 30)  # 19:30 ET + 4 = 23:30 UTC
-
-    DEFAULT_HEADER_TYPE = 'Cache-Control'
-    DEFAULT_HEADER_PREFIX = 'public, max-age='
-
     LONG_CACHE_ENDPOINTS = ['/schedules/', '/totals']
 
     if '/efile/' in url:
         print('$$$$$ efile', url)
+        print("$$$$$ In EFIING Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, EFILING_CACHE))
         return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, EFILING_CACHE)
     elif '/calendar-dates/' in url:
         print('$$$$$$ calendar-dates', url)
+        print("$$$$$$ In CALENDAR Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, CALENDAR_CACHE))
         return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, CALENDAR_CACHE)
     elif '/legal/' in url:
         print('$$$$$$ legal', url)
+        print("$$$$$$ In LEGAL Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE))
         return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE)
     elif '/totals' in url:
         print('$$$$$$ committee or candidate totals', url)
-        return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, DEFAULT_CACHE)
+        print("$$$$$$ 5 Mins cache:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE))
+        return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE)
 
     # This will work differently in local environment - will use local timezone
     elif (
         '/schedules/' in url and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END
-        # url in LONG_CACHE_ENDPOINTS_SET and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END
+        # url in LONG_CACHE_ENDPOINTS and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END
     ):
-        print('$$$$ LONG_CACHE URL', url)
+        print('$$$$ LONG_CACHE', url)
         print('$$$$ peak_hours_start_time UTC ', PEAK_HOURS_START)
         print('$$$$ peak_hours_end_time UTC', PEAK_HOURS_END)
         peak_hours_expiration_time = datetime.combine(
