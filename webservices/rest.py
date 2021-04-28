@@ -106,6 +106,8 @@ PEAK_HOURS_END = time(23, 30)  # 19:30 ET + 4 = 23:30 UTC
 DEFAULT_HEADER_TYPE = 'Cache-Control'
 DEFAULT_HEADER_PREFIX = 'public, max-age='
 
+LONG_CACHE_ENDPOINTS = ['/schedules/', '/totals']
+
 # app.config['SQLALCHEMY_ECHO'] = True
 
 # Modify app configuration and logging level for production
@@ -194,8 +196,6 @@ def limit_remote_addr():
 
 def get_cache_header(url):
 
-    LONG_CACHE_ENDPOINTS = ['/schedules/', '/totals']
-
     if '/efile/' in url:
         print('$$$$$ efile', url)
         print("$$$$$ In EFIING Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, EFILING_CACHE))
@@ -208,24 +208,15 @@ def get_cache_header(url):
         print('$$$$$$ legal', url)
         print("$$$$$$ In LEGAL Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE))
         return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE)
-    elif '/totals' in url:
-        print('$$$$$$ committee or candidate totals', url)
-        print("$$$$$$ 5 Mins cache:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE))
-        return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, LEGAL_CACHE)
 
-    # This will work differently in local environment - will use local timezone
-    elif (
-        '/schedules/' in url and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END
-        # url in LONG_CACHE_ENDPOINTS and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END
-    ):
-        print('$$$$ LONG_CACHE', url)
-        print('$$$$ peak_hours_start_time UTC ', PEAK_HOURS_START)
-        print('$$$$ peak_hours_end_time UTC', PEAK_HOURS_END)
-        peak_hours_expiration_time = datetime.combine(
-            datetime.now().date(), PEAK_HOURS_END
-        ).strftime('%a, %d %b %Y %H:%M:%S GMT')
-        print('$$$$ peak_hours_expiration_time GMT', peak_hours_expiration_time)
-        return 'Expires', peak_hours_expiration_time
+    for value in LONG_CACHE_ENDPOINTS:
+        if value in url and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END:
+            peak_hours_expiration_time = datetime.combine(
+                datetime.now().date(), PEAK_HOURS_END
+            ).strftime('%a, %d %b %Y %H:%M:%S GMT')
+            print('$$$$$$ for loop logic is working....', url)
+            print('$$$$$$ committee or candidate totals', url)
+            return 'Expires', peak_hours_expiration_time
 
     return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, DEFAULT_CACHE)
 
@@ -605,6 +596,15 @@ def report():
     app.logger.info(ujson.loads(str(request.data, 'utf-8')))
     return util.output_json("CSP violation reported", 200)
 
+
+def checkIfMatch(url):
+    print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+    if '/schedules/' in url:
+        return True
+    elif '/totals/' in url:
+        return True
+    else:
+        return False
 
 app.register_blueprint(docs)
 
