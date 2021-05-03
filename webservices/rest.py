@@ -106,7 +106,7 @@ PEAK_HOURS_END = time(23, 30)  # 19:30 ET + 4 = 23:30 UTC
 DEFAULT_HEADER_TYPE = 'Cache-Control'
 DEFAULT_HEADER_PREFIX = 'public, max-age='
 
-LONG_CACHE_ENDPOINTS = ['/schedules/', '/totals']
+LONG_CACHE_ENDPOINTS = ['/totals', '/schedules/']
 
 # app.config['SQLALCHEMY_ECHO'] = True
 
@@ -211,14 +211,15 @@ def get_cache_header(url):
 
     for value in LONG_CACHE_ENDPOINTS:
         if value in url and PEAK_HOURS_START <= datetime.now().time() <= PEAK_HOURS_END:
+            print('$$$$$$ Caching schedule or committee/candidate totals', url)
             peak_hours_expiration_time = datetime.combine(
                 datetime.now().date(), PEAK_HOURS_END
             ).strftime('%a, %d %b %Y %H:%M:%S GMT')
-            print('$$$$$$ for loop logic is working....', url)
-            print('$$$$$$ committee or candidate totals', url)
             return 'Expires', peak_hours_expiration_time
-
-    return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, DEFAULT_CACHE)
+    else:
+        print('$$$$$$ Default Cache URL', url)
+        print("$$$$$$ Default Cache Header:", DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, DEFAULT_CACHE))
+        return DEFAULT_HEADER_TYPE, '{}{}'.format(DEFAULT_HEADER_PREFIX, DEFAULT_CACHE)
 
 
 @app.after_request
@@ -595,16 +596,6 @@ def report():
     """
     app.logger.info(ujson.loads(str(request.data, 'utf-8')))
     return util.output_json("CSP violation reported", 200)
-
-
-def checkIfMatch(url):
-    print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-    if '/schedules/' in url:
-        return True
-    elif '/totals/' in url:
-        return True
-    else:
-        return False
 
 app.register_blueprint(docs)
 
