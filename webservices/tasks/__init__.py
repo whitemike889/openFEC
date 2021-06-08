@@ -58,12 +58,12 @@ def redis_url():
 app = celery.Celery('openfec')
 app.conf.update(
     broker_url=redis_url(),
-    broker_use_ssl={
-        'ssl_cert_reqs': ssl.CERT_NONE,
-    },
-    redis_backend_use_ssl={
-        'ssl_cert_reqs': ssl.CERT_NONE,
-    },
+    # broker_use_ssl={
+    #     'ssl_cert_reqs': ssl.CERT_NONE,
+    # },
+    # redis_backend_use_ssl={
+    #     'ssl_cert_reqs': ssl.CERT_NONE,
+    # },
     imports=(
         'webservices.tasks.refresh',
         'webservices.tasks.download',
@@ -78,7 +78,7 @@ app.conf.update(
 app.conf.ONCE = {
     'backend': 'celery_once.backends.Redis',
     'settings': {
-        'url': redis_url() + "?ssl=true",
+        'url': redis_url(),
         'default_timeout': 60 * 60
     }
 }
