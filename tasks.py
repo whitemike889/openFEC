@@ -142,8 +142,9 @@ def _detect_space(repo, branch=None, yes=False):
 
 DEPLOY_RULES = (
     ('prod', _detect_prod),
-    ('stage', lambda _, branch: branch.startswith('release')),
-    ('dev', lambda _, branch: branch == 'test/test_fix_schedule_b_efile_download_multi_rows'),
+    # ('stage', lambda _, branch: branch.startswith('release')),
+    ('dev', lambda _, branch: branch == 'develop'),
+    ('stage', lambda _, branch: branch == 'test/test_fix_schedule_b_efile_download_multi_rows'),
 )
 
 
